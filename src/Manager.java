@@ -1,6 +1,8 @@
 import java.io.IOException;
 import java.util.logging.*;
 
+import static java.lang.Thread.sleep;
+
 /**
  * Main
  */
@@ -30,6 +32,25 @@ public class Manager {
             logger.log(Level.SEVERE, "IOException thrown building log.", e);
         }
 
-        logger.log(Level.INFO, "Manager says hi! :)");
+        Thread server = null;
+
+        try {
+            server = new Thread(new Server(8080));
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "IOException thrown starting Server.", e);
+        }
+
+        logger.log(Level.INFO, "Server says hi! :)");
+
+        try {
+            sleep(100);
+        } catch (InterruptedException e) {
+            logger.log(Level.SEVERE, "Server interrupted before expected shutdown.");
+        } finally {
+            if (server != null) {
+                server.interrupt();
+                logger.log(Level.INFO, "Server says goodbye :(");
+            }
+        }
     }
 }
