@@ -10,14 +10,22 @@ public class Server implements Runnable {
     private ServerSocket listener;
     private Logger logger;
 
+    /**
+     * Create a ServerSocket on a given port.
+     *
+     * @param port
+     * @throws IOException
+     */
     public Server(int port) throws IOException {
         Handler fileHandler = new FileHandler("logger." + this.getClass().getSimpleName() + ".log");
         fileHandler.setFormatter(new SimpleFormatter());
+        Handler consoleHandler = new ConsoleHandler();
 
         logger = Logger.getLogger(this.getClass().getSimpleName());
-        logger.addHandler(new ConsoleHandler());
+        logger.addHandler(consoleHandler);
         logger.addHandler(fileHandler);
 
+        consoleHandler.setLevel(Level.WARNING);
         fileHandler.setLevel(Level.ALL);
         logger.setLevel(Level.ALL);
 
@@ -27,6 +35,9 @@ public class Server implements Runnable {
         logger.log(Level.CONFIG, "Server listener created");
     }
 
+    /**
+     * Start the server in another thread.
+     */
     public void run() {
         try {
             while (true) {

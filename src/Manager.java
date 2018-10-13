@@ -1,7 +1,6 @@
 import java.io.IOException;
+import java.util.Scanner;
 import java.util.logging.*;
-
-import static java.lang.Thread.sleep;
 
 /**
  * Main
@@ -23,7 +22,7 @@ public class Manager {
             logger.addHandler(consoleHandler);
             logger.addHandler(fileHandler);
 
-            consoleHandler.setLevel(Level.ALL);
+            consoleHandler.setLevel(Level.WARNING);
             fileHandler.setLevel(Level.ALL);
             logger.setLevel(Level.ALL);
 
@@ -42,15 +41,18 @@ public class Manager {
 
         logger.log(Level.INFO, "Server says hi! :)");
 
-        try {
-            sleep(100);
-        } catch (InterruptedException e) {
-            logger.log(Level.SEVERE, "Server interrupted before expected shutdown.");
-        } finally {
-            if (server != null) {
-                server.interrupt();
-                logger.log(Level.INFO, "Server says goodbye :(");
-            }
+        Scanner in = new Scanner(System.in);
+        System.out.println("Server says hi! :) Type 'quit' to stop server");
+
+        boolean done = false;
+        while(!done && in.hasNextLine()) {
+            if (in.nextLine().toLowerCase().trim().equals("quit"))
+                done = true;
         }
+
+        server.interrupt();
+
+        logger.log(Level.INFO, "Server interrupted.");
+        System.out.println("Goodbye server :(");
     }
 }
