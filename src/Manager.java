@@ -21,10 +21,18 @@ public class Manager {
 
     public static void main(String [] argv) {
 
-        Manager manager = new Manager(argv);
+        Manager manager = null;
+
+        try {
+            manager = new Manager(argv);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Could not instantiate Manager.");
+            return;
+        }
 
         Scanner in = new Scanner(System.in);
-        System.out.println("Server says hi! :) Type 'quit' to stop server");
+        System.out.println("Type 'quit' to stop server");
 
         boolean done = false;
         while(!done && in.hasNextLine()) {
@@ -36,7 +44,7 @@ public class Manager {
         manager.closeDb();
     }
 
-    public Manager(String [] args) {
+    public Manager(String [] args) throws Exception {
         // build logger
         logger = Logger.getLogger(this.getClass().getSimpleName()); // change to another name?
 
@@ -44,7 +52,7 @@ public class Manager {
             loggerFactory();
         } catch (IOException e) {
             logger.log(Level.SEVERE, "IOException thrown building log.", e);
-            return;
+            throw new Exception("Could not build Manager log.");
         }
 
         // create database
@@ -57,7 +65,7 @@ public class Manager {
             return;
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "Could not create connection to SQL database.");
-            return;
+            throw new Exception("Could not create DB.");
         }
 
         // start server
@@ -67,6 +75,7 @@ public class Manager {
             server = new Thread(new Server(8080));
         } catch (IOException e) {
             logger.log(Level.SEVERE, "IOException thrown starting Server.", e);
+            throw new Exception("Could not start server.");
         }
 
         logger.log(Level.INFO, "Server says hi! :)");
