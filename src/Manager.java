@@ -11,44 +11,17 @@ import java.util.logging.*;
  */
 public class Manager {
 
+    private Logger logger;
+    private Connection connection;
+    private Thread server;
+
     // TODO: replace static objects with reading arguments
     public static final int ARG_DB_PATH = 0;
     public static final int ARG_PORT = 1;
 
     public static void main(String [] argv) {
 
-        // build logger
-        Logger logger = Logger.getLogger((new Manager()).getClass().getSimpleName()); // change to another name?
-
-        try {
-            loggerFactory(logger);
-        } catch (IOException e) {
-            logger.log(Level.SEVERE, "IOException thrown building log.", e);
-            return;
-        }
-
-        // create database
-        Connection connection = null;
-
-        try {
-            dbFactory(argv, logger, connection);
-        } catch (IOException e) {
-            logger.log(Level.SEVERE, "Could not build database.");
-            return;
-        } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Could not create connection to SQL database.");
-            return;
-        }
-
-        Thread server = null;
-
-        try {
-            server = new Thread(new Server(8080));
-        } catch (IOException e) {
-            logger.log(Level.SEVERE, "IOException thrown starting Server.", e);
-        }
-
-        logger.log(Level.INFO, "Server says hi! :)");
+        Manager manager = new Manager(argv);
 
         Scanner in = new Scanner(System.in);
         System.out.println("Server says hi! :) Type 'quit' to stop server");
@@ -59,23 +32,47 @@ public class Manager {
                 done = true;
         }
 
-        if (server != null) {
-            server.interrupt();
-            logger.log(Level.INFO, "Server interrupted.");
-            System.out.println("Goodbye server :(");
-        }
-
-        // inspector goofing here, if there is a problem creating it, it stops exec; fairly safe to ignore warning
-        if (connection != null) {
-            try {
-                connection.close();
-            } catch (SQLException e) {
-                logger.log(Level.SEVERE, "Could not close connection to database.", e);
-            }
-        }
+        manager.stopServer();
+        manager.closeDb();
     }
 
-    private static void loggerFactory(Logger logger) throws IOException {
+    public Manager(String [] args) {
+        // build logger
+        logger = Logger.getLogger(this.getClass().getSimpleName()); // change to another name?
+
+        try {
+            loggerFactory();
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "IOException thrown building log.", e);
+            return;
+        }
+
+        // create database
+        connection = null;
+
+        try {
+            dbFactory(args);
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "Could not build database.");
+            return;
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Could not create connection to SQL database.");
+            return;
+        }
+
+        // start server
+        server = null;
+
+        try {
+            server = new Thread(new Server(8080));
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "IOException thrown starting Server.", e);
+        }
+
+        logger.log(Level.INFO, "Server says hi! :)");
+    }
+
+    private void loggerFactory() throws IOException {
         Handler consoleHandler;
         Handler fileHandler;
 
@@ -93,14 +90,14 @@ public class Manager {
         logger.config("Logger configuration finished.");
     }
 
-    private static void dbFactory(String [] argv, Logger logger, Connection connection) throws IOException, SQLException {
+    private void dbFactory(String [] args) throws IOException, SQLException {
         String dbFilePath = null;
         String dbUrl = "jdbc:sqlite:";
 
         logger.log(Level.CONFIG, "Current working directory: " + new File(".").getCanonicalPath());
 
-        if (argv.length > 0) {
-            dbFilePath = argv[ARG_DB_PATH];
+        if (args.length > 0) {
+            dbFilePath = args[ARG_DB_PATH];
             logger.log(Level.CONFIG, "Using custom database file path: " + dbFilePath);
         } else {
             try {
@@ -116,7 +113,20 @@ public class Manager {
         connection = DriverManager.getConnection(dbUrl);
     }
 
-    private static void startServer() {
-        //
+    public void stopServer() {
+        if (server != null) {
+            server.interrupt();
+            logger.log(Level.INFO, "Server interrupted.");
+        }
+    }
+
+    public void closeDb() {
+        if (connection != null) {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                logger.log(Level.SEVERE, "Could not close connection to database.", e);
+            }
+        }
     }
 }
