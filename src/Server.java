@@ -3,6 +3,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.*;
+import java.util.Calendar;
 import java.util.logging.*;
 
 public class Server implements Runnable {
@@ -82,11 +83,36 @@ public class Server implements Runnable {
     }
 
     /**
+     * Insert and updated LocationObject. Find any existing location with the same key and remove it first.
+     *
+     * @param locationObject the updated location
+     * @throws SQLException
+     */
+    private void findAndInsertLocation(LocationObject locationObject) throws SQLException {
+        // TODO: find existing information first
+        String sqlInsertLocation = "INSERT INTO Locations(key, latitude, longitude) VALUES(?,?)";
+
+        PreparedStatement statement = connection.prepareStatement(sqlInsertLocation);
+        statement.setString(1, locationObject.getKey());
+        statement.setDouble(2, locationObject.getLatitude());
+        statement.setDouble(3, locationObject.getLongitude());
+
+        statement.executeUpdate();
+    }
+
+    /**
      * Start the server in another thread.
      */
     public void run() {
         try {
             while (true) {
+                // cannot check at the end if an exception is thrown and execution continues
+                if (Thread.interrupted()) {
+                    logger.log(Level.WARNING, "Server interrupted in loop.");
+                    connection.close();
+                    return;
+                }
+
                 Socket socket = listener.accept();
 
                 // grab client info
@@ -97,17 +123,33 @@ public class Server implements Runnable {
                 String ip = stringBuilder.toString();
                 logger.log(Level.INFO, "New connection opened with client at: " + ip);
 
-                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                PrintWriter out = new PrintWriter(socket.getOutputStream());
+                ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
+                ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+                LocationObject locationObject;
 
-                String s = in.readLine();
-                out.println("Echoing back input. Your address is " + ip + ". " + s);
-
-                if (Thread.interrupted()) {
-                    logger.log(Level.WARNING, "Server interrupted in loop.");
-                    connection.close();
-                    return;
+                try {
+                    locationObject = (LocationObject) in.readObject();
+                } catch (ClassNotFoundException e) {
+                    logger.log(Level.WARNING, "Client sent wrong object type.");
+                    out.writeObject(new LocationObject(-90, -90)); // send out-of-bounds to signify error
+                    continue; // don't want to stop the server for a single incorrect input
                 }
+
+                if (locationObject.getKey() == null) {
+                    String key = Calendar.getInstance().getTime().toString() + " | " + ip;
+                    locationObject.setKey(key);
+                }
+
+                try {
+                    findAndInsertLocation(locationObject);
+                } catch (SQLException e) {
+                    logger.log(Level.SEVERE, "Could not insert new location into database.");
+                    out.writeObject(new LocationObject(-90, -90)); // send out-of-bounds to signify error
+                    continue;
+                }
+
+                // TODO: find closest location object and send that
+                out.writeObject(locationObject);
             }
         } catch (IOException e) {
             e.getMessage();
