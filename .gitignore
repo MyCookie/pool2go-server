@@ -147,3 +147,7 @@ $RECYCLE.BIN/
 
 
 # End of https://www.gitignore.io/api/java,linux,windows,intellij
+
+# Added by Ashish
+# All created databases will have an extension of sqlite
+*.sqlite
