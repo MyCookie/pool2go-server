@@ -1,7 +1,5 @@
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.Connection;
@@ -72,10 +70,20 @@ public class Server implements Runnable {
         try {
             while (true) {
                 Socket socket = listener.accept();
-                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                String s = in.readLine();
 
-                logger.log(Level.INFO, "New input received");
+                // grab client info
+                InetAddress clientAddr = socket.getInetAddress();
+                StringBuilder stringBuilder = new StringBuilder();
+                for (byte b : clientAddr.getAddress())
+                    stringBuilder.append(b);
+                String ip = stringBuilder.toString();
+                logger.log(Level.INFO, "New connection opened with client at: " + ip);
+
+                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                PrintWriter out = new PrintWriter(socket.getOutputStream());
+
+                String s = in.readLine();
+                out.println("Echoing back input. Your address is " + ip + ". " + s);
 
                 if (Thread.interrupted()) {
                     logger.log(Level.WARNING, "Server interrupted in loop.");
