@@ -3,6 +3,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.logging.*;
 
@@ -150,6 +151,48 @@ public class Server implements Runnable {
     }
 
     /**
+     * Find the nearest locations within 200 meters of a given location. Does a simple, and very inefficient, check over
+     * all locations stored in the database that do not have the same key as the location to compare to.
+     *
+     * If no locations are found, clear the list.
+     *
+     * TODO: given time, find a way to speed up this process.
+     *
+     * @param locationObject the location to compare to
+     * @param locationObjects if a close location is found, put it in here
+     * @throws SQLException
+     */
+    private void findNearestLocations(LocationObject locationObject,
+                                      ArrayList<LocationObject> locationObjects) throws SQLException {
+        String sqlGetAllRecordsNotOfClientKey = "SELECT key, latitude, longitude FROM Locations WHERE key <> ?";
+        PreparedStatement statement = connection.prepareStatement(sqlGetAllRecordsNotOfClientKey);
+        statement.setString(1, locationObject.getKey());
+        ResultSet resultSet = statement.executeQuery();
+
+        double resultLat = 0;
+        double resultLng = 0;
+
+        if (resultSet.isBeforeFirst()) {
+            // no other clients exist, empty the list
+            locationObjects.clear();
+        } else {
+            while (resultSet.next()) {
+                // https://en.wikipedia.org/wiki/Decimal_degrees
+                // 0.005 ~ 200 meters
+                resultLat = resultSet.getDouble("latitude");
+                if (Math.abs(resultLat - locationObject.getLatitude()) < 0.005) {
+                    // within latitude bounds
+                    resultLng = resultSet.getDouble("longitude");
+                    if (Math.abs(resultLng - locationObject.getLongitude()) < 0.005) {
+                        // within longitude bounds
+                        locationObjects.add(new LocationObject(locationObject.getKey(), resultLat, resultLng));
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * Start the server in another thread.
      *
      * A runtime exception should not cause the thread to stop, but that means that the interrupt check will need to
@@ -220,8 +263,13 @@ public class Server implements Runnable {
                     continue; // don't want to stop the server to avoid crashing the client
                 }
 
-                // TODO: find closest location object and send that
-                out.writeObject(locationObject);
+                // TODO: send first location found for now, come back after designing the way to send all
+                ArrayList<LocationObject> locationObjects = new ArrayList<>(1);
+                findNearestLocations(locationObject, locationObjects);
+                if (locationObjects.isEmpty())
+                    out.writeObject(NULL_LOCATION);
+                else
+                    out.writeObject(locationObjects.get(1));
             }
         } catch (IOException e) {
             e.getMessage();
