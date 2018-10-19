@@ -10,7 +10,7 @@ import java.util.logging.*;
  * A simple I/O server that communicates in LocationObjects and writes updates to a SQLite database.
  *
  * If there are any runtime exceptions while the server is running, it will do it's best to continue execution. If it
- * needs to communicate to a client during this, it will send an out-of-bounds location of (-90, -90) with a null key.
+ * needs to communicate to a client during this, it will send an out-of-bounds location of (360, 360) with a null key.
  *
  * The server will require the full path and filename for the SQLite database, see the constructor for details.
  *
@@ -19,6 +19,9 @@ import java.util.logging.*;
  * @see LocationObject
  */
 public class Server implements Runnable {
+
+    private static final double OUT_OF_BOUNDS_LATITUDE = 360;
+    private static final double OUT_OF_BOUNDS_LONGITUDE = 360;
 
     private ServerSocket listener;
     private Logger logger;
@@ -180,7 +183,7 @@ public class Server implements Runnable {
                     locationObject = (LocationObject) in.readObject();
                 } catch (ClassNotFoundException e) {
                     logger.log(Level.WARNING, "Client sent wrong object type.");
-                    out.writeObject(new LocationObject(-90, -90)); // send out-of-bounds to signify error
+                    out.writeObject(new LocationObject(OUT_OF_BOUNDS_LATITUDE, OUT_OF_BOUNDS_LONGITUDE));
                     continue; // don't want to stop the server for a single incorrect input
                 }
 
@@ -193,8 +196,8 @@ public class Server implements Runnable {
                     findAndInsertLocation(locationObject);
                 } catch (SQLException e) {
                     logger.log(Level.SEVERE, "Could not insert new location into database.");
-                    out.writeObject(new LocationObject(-90, -90)); // send out-of-bounds to signify error
-                    continue;
+                    out.writeObject(new LocationObject(OUT_OF_BOUNDS_LATITUDE, OUT_OF_BOUNDS_LONGITUDE));
+                    continue; // don't want to stop the server to avoid crashing the client
                 }
 
                 // TODO: find closest location object and send that
