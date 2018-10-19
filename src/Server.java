@@ -8,14 +8,45 @@ import java.util.Calendar;
 import java.util.logging.*;
 
 /**
- * A simple I/O server that communicates in LocationObjects and writes updates to a SQLite database.
+ * <p>A simple I/O server that communicates in LocationObjects and writes updates to a SQLite database.</p>
  *
- * If there are any runtime exceptions while the server is running, it will do it's best to continue execution. If it
- * needs to communicate to a client during this, it will send an out-of-bounds location of (360, 360) with a null key.
+ * <p>If there are any runtime exceptions while the server is running, it will do it's best to continue execution. If it
+ * needs to communicate to a client during this, it will send an out-of-bounds location of (360, 360) with a null key.</p>
  *
- * The server will require the full path and filename for the SQLite database, see the constructor for details.
+ * <p>The server will require the full path and filename for the SQLite database, see the constructor for details.</p>
  *
- * It also requires read/write permissions for the directory it's in for it's log file.
+ * <p>It also requires read/write permissions for the directory it's in for it's log file.</p>
+ *
+ * <p>The server will require the client to perform a handshake first, in the form of:
+ * <ul>
+ *     <li>Client opens a socket</li>
+ *     <li>Server sends an empty LocationObject with the client's unique key</li>
+ *     <li>Client sends a LocationObject with it's unique key provided by the server</li>
+ *     <ul>
+ *         <li>Notice the server does not check for the other fields of the Location Object send, only the key</li>
+ *         <li>If the client sends the wrong key, it gets an additional 5 attempts to send the right key</li>
+ *     </ul>
+ * </ul></p>
+ *
+ * <p>This is not meant to ensure a private connection, but merely a mutually assured stable one.</p>
+ *
+ * <p>The client is then required to do the following:
+ * <ul>
+ *     <li>Send it's updated location in a LocationObject with it's provided key</li>
+ *     <li>The server does its job: updating the client's location in the database, and searching for any other locations
+ *     with a different key within a 200 meter radius.</li>
+ *     <ul>
+ *         <li>If at any point during this the server encounters an error, it will record it and send an out-of-bounds
+ *         location (as described above) to the client.</li>
+ *         <li>If the client receives this location, it is to assume that the server has stopped execution on it's end,
+ *         and is expected to sever the connection until it's next update.</li>
+ *     </ul>
+ *     <li>Currently the server will finally send one of two locations:</li>
+ *     <ul>
+ *         <li>A 'null location' if it cannot find any nearby locations.</li>
+ *         <li>A single location within 200 meters of the client's reported location.</li>
+ *     </ul>
+ * </ul></p>
  *
  * @see LocationObject
  */
@@ -32,12 +63,12 @@ public class Server implements Runnable {
     private static final LocationObject NULL_LOCATION = new LocationObject(OUT_OF_BOUNDS_LATITUDE, OUT_OF_BOUNDS_LONGITUDE);
 
     /**
-     * Create a ServerSocket on a given port, and use a given database.
+     * <p>Create a ServerSocket on a given port, and use a given database.</p>
      *
-     * A full path and file name is required for the database location. For example: C:\ServerFiles\Databases\Database.sqlite,
-     * or: /server_raid/databases/database.sqlite.
+     * <p>A full path and file name is required for the database location. For example: C:\ServerFiles\Databases\Database.sqlite,
+     * or: /server_raid/databases/database.sqlite.</p>
      *
-     * An IOException is thrown if there was any problems/Exceptions thrown when building the Server. See logs for details.
+     * <p>An IOException is thrown if there was any problems/Exceptions thrown when building the Server. See logs for details.</p>
      *
      * @param port port for the Server to run on
      * @param databaseUrl full path and filename for the database
@@ -151,16 +182,16 @@ public class Server implements Runnable {
     }
 
     /**
-     * Find the nearest locations within 200 meters of a given location. Does a simple, and very inefficient, check over
-     * all locations stored in the database that do not have the same key as the location to compare to.
+     * <p>Find the nearest locations within 200 meters of a given location. Does a simple, and very inefficient, check over
+     * all locations stored in the database that do not have the same key as the location to compare to.</p>
      *
-     * If no locations are found, clear the list.
+     * <p>If no locations are found, clear the list.</p>
      *
-     * TODO: given time, find a way to speed up this process.
+     * <p>TODO: given time, find a way to speed up this process.</p>
      *
      * @param locationObject the location to compare to
      * @param locationObjects if a close location is found, put it in here
-     * @throws SQLException
+     * @throws SQLException if the database cannot be accessed
      */
     private void findNearestLocations(LocationObject locationObject,
                                       ArrayList<LocationObject> locationObjects) throws SQLException {
@@ -193,10 +224,10 @@ public class Server implements Runnable {
     }
 
     /**
-     * Start the server in another thread.
+     * <p>Start the server in another thread.</p>
      *
-     * A runtime exception should not cause the thread to stop, but that means that the interrupt check will need to
-     * happen first.
+     * <p>A runtime exception should not cause the thread to stop, but that means that the interrupt check will need to
+     * happen first.</p>
      */
     public void run() {
         try {
