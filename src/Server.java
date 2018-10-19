@@ -105,21 +105,43 @@ public class Server implements Runnable {
     }
 
     /**
-     * Insert and updated LocationObject. Find any existing location with the same key and remove it first.
+     * Insert an updated location. Search for an existing record with the key; if none found, insert a new record,
+     * if a key exists, update the record.
      *
      * @param locationObject the updated location
      * @throws SQLException could not write to the database
      */
     private void findAndInsertLocation(LocationObject locationObject) throws SQLException {
-        // TODO: find existing information first
-        String sqlInsertLocation = "INSERT INTO Locations(key, latitude, longitude) VALUES(?,?)";
-
-        PreparedStatement statement = connection.prepareStatement(sqlInsertLocation);
+        // find an existing location entry with key
+        String sqlFindExistingKey = "SELECT key FROM Locations WHERE key = ?";
+        PreparedStatement statement = connection.prepareStatement(sqlFindExistingKey);
         statement.setString(1, locationObject.getKey());
-        statement.setDouble(2, locationObject.getLatitude());
-        statement.setDouble(3, locationObject.getLongitude());
+        ResultSet resultSet = statement.executeQuery();
 
-        statement.executeUpdate();
+        // easier to check if there is a first entry
+        // https://stackoverflow.com/questions/867194/java-resultset-how-to-check-if-there-are-any-results
+        if (resultSet.isBeforeFirst()) { // no location entry for key, insert a new record
+            String sqlInsertLocation = "INSERT INTO Locations(key, latitude, longitude) VALUES(?,?,?)";
+
+            statement = connection.prepareStatement(sqlInsertLocation);
+            statement.setString(1, locationObject.getKey());
+            statement.setDouble(2, locationObject.getLatitude());
+            statement.setDouble(3, locationObject.getLongitude());
+
+            statement.executeUpdate();
+        } else { // if an entry exists, update it
+            String sqlUpdateExistingRecord = "UPDATE Locations\n" +
+                    "SET latitude = ?,\n" +
+                    "    longitude = ?\n" +
+                    "WHERE key = ?";
+
+            statement = connection.prepareStatement(sqlUpdateExistingRecord);
+            statement.setDouble(1, locationObject.getLatitude());
+            statement.setDouble(2, locationObject.getLongitude());
+            statement.setString(3, locationObject.getKey());
+
+            statement.executeUpdate();
+        }
     }
 
     /**
@@ -147,6 +169,8 @@ public class Server implements Runnable {
                     stringBuilder.append(b);
                 String ip = stringBuilder.toString();
                 logger.log(Level.INFO, "New connection opened with client at: " + ip);
+
+                // TODO: perform a handshake with the client first (send and out-of-bounds location and wait for echo)
 
                 ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
                 ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
