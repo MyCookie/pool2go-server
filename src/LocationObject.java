@@ -49,4 +49,8 @@ public class LocationObject {
     public void setKey(String key) {
         this.key = key;
     }
+
+    public void setLatitude(double latitude) { this.latitude = latitude; }
+
+    public void setLongitude(double longitude) { this.longitude = longitude; }
 }
