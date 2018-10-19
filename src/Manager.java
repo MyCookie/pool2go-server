@@ -90,7 +90,6 @@ public class Manager {
         }
 
         manager.stopServer();
-        manager.closeDb();
     }
 
     /**
@@ -122,6 +121,8 @@ public class Manager {
             logger.log(Level.SEVERE, "Could not create connection to SQL database.");
             throw new Exception("Could not create DB.");
         }
+        // manager does't interact with the db, close it when creation was a success
+        closeDb();
 
         // start server
         server = null;
