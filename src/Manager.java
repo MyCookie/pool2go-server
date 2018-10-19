@@ -63,6 +63,15 @@ public class Manager {
                                "    --port, -p                port number for the server");
             return;
         } else {
+            // need to make sure it's always the full path
+            if (path.charAt(path.length() - 1) != '\\' && System.getProperty("os.name").toLowerCase().contains("windows"))
+                path += "\\";
+            // assuming it's running on either mac, linux or bsd
+            // if it's haiku: let me know if there's a linux layer like what freebsd has, am interested in haiku
+            else if (path.charAt(path.length() - 1) != '/')
+                path += "/";
+
+            System.out.println("Running on host type " + System.getProperty("os.name"));
             System.out.println("Running with the following arguments:" + "\n" +
                                "Full path for SQLite DB: " + path + "\n" +
                                "File name for SQLite DB: " + filename + "\n" +
