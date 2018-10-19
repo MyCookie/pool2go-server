@@ -93,6 +93,14 @@ public class Manager {
         manager.closeDb();
     }
 
+    /**
+     * Manages the Server, required for console input on when to stop the server.
+     *
+     * @param path
+     * @param filename
+     * @param port
+     * @throws Exception
+     */
     public Manager(String path, String filename, int port) throws Exception {
         // build logger
         logger = Logger.getLogger(this.getClass().getSimpleName()); // change to another name?
@@ -128,6 +136,11 @@ public class Manager {
         logger.log(Level.INFO, "Server says hi! :)");
     }
 
+    /**
+     * Build a logger for Manager.
+     *
+     * @throws IOException could not create the log file, may not have read/write permissions in the working directory
+     */
     private void loggerFactory() throws IOException {
         Handler consoleHandler;
         Handler fileHandler;
@@ -146,6 +159,13 @@ public class Manager {
         logger.config("Logger configuration finished.");
     }
 
+    /**
+     * Create the database file if it doesn't exist and write to log database details.
+     *
+     * @param path full path for the database
+     * @param filename full file name for the database
+     * @throws SQLException could not connect to the database
+     */
     private void dbFactory(String path, String filename) throws SQLException {
         String dbUrl = "jdbc:sqlite:" + path + filename;
 
@@ -157,6 +177,9 @@ public class Manager {
         logger.log(Level.CONFIG, "Successfully connected to SQLite DB.");
     }
 
+    /**
+     * Stop the server. Since Thread.stop() is not recommended, use Thread.interrupt().
+     */
     public void stopServer() {
         if (server != null) {
             server.interrupt();
@@ -164,6 +187,9 @@ public class Manager {
         }
     }
 
+    /**
+     * Close the connection to the database.
+     */
     public void closeDb() {
         if (connection != null) {
             try {

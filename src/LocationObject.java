@@ -1,3 +1,8 @@
+/**
+ * A wrapper for a location in the form of Latitude, Longitude and tied to an identifier.
+ *
+ * The identifier is intended to be in the form of {@code $DATE | IP}, to keep it as unique and simple as possible.
+ */
 public class LocationObject {
 
     private String key;

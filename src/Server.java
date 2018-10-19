@@ -6,6 +6,18 @@ import java.sql.*;
 import java.util.Calendar;
 import java.util.logging.*;
 
+/**
+ * A simple I/O server that communicates in LocationObjects and writes updates to a SQLite database.
+ *
+ * If there are any runtime exceptions while the server is running, it will do it's best to continue execution. If it
+ * needs to communicate to a client during this, it will send an out-of-bounds location of (-90, -90) with a null key.
+ *
+ * The server will require the full path and filename for the SQLite database, see the constructor for details.
+ *
+ * It also requires read/write permissions for the directory it's in for it's log file.
+ *
+ * @see LocationObject
+ */
 public class Server implements Runnable {
 
     private ServerSocket listener;
@@ -16,9 +28,14 @@ public class Server implements Runnable {
     /**
      * Create a ServerSocket on a given port, and use a given database.
      *
-     * @param port
-     * @param databaseUrl
-     * @throws IOException
+     * A full path and file name is required for the database location. For example: C:\ServerFiles\Databases\Database.sqlite,
+     * or: /server_raid/databases/database.sqlite.
+     *
+     * An IOException is thrown if there was any problems/Exceptions thrown when building the Server. See logs for details.
+     *
+     * @param port port for the Server to run on
+     * @param databaseUrl full path and filename for the database
+     * @throws IOException generic exception when some exception occurred when building the server parts
      */
     public Server(int port, String databaseUrl) throws IOException {
         try {
@@ -39,6 +56,11 @@ public class Server implements Runnable {
         logger.log(Level.CONFIG, "Server listener created on port: " + port);
     }
 
+    /**
+     * Connect to the database and create the Locations table.
+     *
+     * @throws SQLException may either mean a connection failure or a table creation failure, see logs for details
+     */
     private void buildDb() throws SQLException {
         try {
             connection = DriverManager.getConnection(dbUrl);
@@ -62,9 +84,9 @@ public class Server implements Runnable {
     }
 
     /**
-     * Build a logger.
+     * Build a logger. Requires read/write permissions in the directory this is in.
      *
-     * @throws IOException
+     * @throws IOException cannot write files to the current working directory
      */
     private void loggerFactory() throws IOException {
         Handler fileHandler = new FileHandler("logger." + this.getClass().getSimpleName() + ".log");
@@ -86,7 +108,7 @@ public class Server implements Runnable {
      * Insert and updated LocationObject. Find any existing location with the same key and remove it first.
      *
      * @param locationObject the updated location
-     * @throws SQLException
+     * @throws SQLException could not write to the database
      */
     private void findAndInsertLocation(LocationObject locationObject) throws SQLException {
         // TODO: find existing information first
@@ -102,6 +124,9 @@ public class Server implements Runnable {
 
     /**
      * Start the server in another thread.
+     *
+     * A runtime exception should not cause the thread to stop, but that means that the interrupt check will need to
+     * happen first.
      */
     public void run() {
         try {
