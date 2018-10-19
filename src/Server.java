@@ -28,6 +28,8 @@ public class Server implements Runnable {
     private String dbUrl;
     private Connection connection;
 
+    private static final LocationObject NULL_LOCATION = new LocationObject(OUT_OF_BOUNDS_LATITUDE, OUT_OF_BOUNDS_LONGITUDE);
+
     /**
      * Create a ServerSocket on a given port, and use a given database.
      *
@@ -173,30 +175,48 @@ public class Server implements Runnable {
                 String ip = stringBuilder.toString();
                 logger.log(Level.INFO, "New connection opened with client at: " + ip);
 
-                // TODO: perform a handshake with the client first (send and out-of-bounds location and wait for echo)
+                String key = Calendar.getInstance().getTime().toString() + " | " + ip;
 
                 ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
                 ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
                 LocationObject locationObject;
 
+                // perform a handshake with the server
+                try {
+                    out.writeObject(new LocationObject(key, OUT_OF_BOUNDS_LATITUDE, OUT_OF_BOUNDS_LONGITUDE));
+                    locationObject = (LocationObject) in.readObject();
+                    int count = 6; // client gets 5 chances
+                    while (!locationObject.getKey().equals(key) && count > 0) {
+                        out.writeObject(new LocationObject(key, OUT_OF_BOUNDS_LATITUDE, OUT_OF_BOUNDS_LONGITUDE));
+                        locationObject = (LocationObject) in.readObject();
+                        --count;
+                    }
+                    if (count == 0) throw new Exception("Could not perform a handshake with the server.");
+                } catch (ClassNotFoundException e) {
+                    logger.log(Level.WARNING, "Client" + ip + " sent wrong object type.");
+                    out.writeObject(NULL_LOCATION);
+                    continue;
+                } catch (Exception e) {
+                    logger.log(Level.WARNING, "Failed handshake with " + ip);
+                    out.writeObject(NULL_LOCATION);
+                    continue;
+                }
+
                 try {
                     locationObject = (LocationObject) in.readObject();
                 } catch (ClassNotFoundException e) {
                     logger.log(Level.WARNING, "Client sent wrong object type.");
-                    out.writeObject(new LocationObject(OUT_OF_BOUNDS_LATITUDE, OUT_OF_BOUNDS_LONGITUDE));
+                    out.writeObject(NULL_LOCATION);
                     continue; // don't want to stop the server for a single incorrect input
                 }
 
-                if (locationObject.getKey() == null) {
-                    String key = Calendar.getInstance().getTime().toString() + " | " + ip;
-                    locationObject.setKey(key);
-                }
+                if (locationObject.getKey() == null) locationObject.setKey(key);
 
                 try {
                     findAndInsertLocation(locationObject);
                 } catch (SQLException e) {
                     logger.log(Level.SEVERE, "Could not insert new location into database.");
-                    out.writeObject(new LocationObject(OUT_OF_BOUNDS_LATITUDE, OUT_OF_BOUNDS_LONGITUDE));
+                    out.writeObject(NULL_LOCATION);
                     continue; // don't want to stop the server to avoid crashing the client
                 }
 
