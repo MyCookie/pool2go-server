@@ -60,7 +60,7 @@ public class Server implements Runnable {
     private String dbUrl;
     private Connection connection;
 
-    private static final LocationObject NULL_LOCATION = new LocationObject(OUT_OF_BOUNDS_LATITUDE, OUT_OF_BOUNDS_LONGITUDE);
+    private static final LocationObject OUT_OF_BOUNDS_LOCATION = new LocationObject(OUT_OF_BOUNDS_LATITUDE, OUT_OF_BOUNDS_LONGITUDE);
 
     /**
      * <p>Create a ServerSocket on a given port, and use a given database.</p>
@@ -269,12 +269,12 @@ public class Server implements Runnable {
                     if (count == 0) throw new Exception("Could not perform a handshake with the server.");
                 } catch (ClassNotFoundException e) {
                     logger.log(Level.WARNING, "Client " + ip + " sent wrong object type.");
-                    out.writeObject(NULL_LOCATION);
+                    out.writeObject(OUT_OF_BOUNDS_LOCATION);
                     socket.close();
                     continue;
                 } catch (Exception e) {
                     logger.log(Level.WARNING, "Failed handshake with " + ip);
-                    out.writeObject(NULL_LOCATION);
+                    out.writeObject(OUT_OF_BOUNDS_LOCATION);
                     socket.close();
                     continue;
                 }
@@ -283,7 +283,7 @@ public class Server implements Runnable {
                     locationObject = (LocationObject) in.readObject();
                 } catch (ClassNotFoundException e) {
                     logger.log(Level.WARNING, "Client sent wrong object type.");
-                    out.writeObject(NULL_LOCATION);
+                    out.writeObject(OUT_OF_BOUNDS_LOCATION);
                     socket.close();
                     continue; // don't want to stop the server for a single incorrect input
                 }
@@ -294,7 +294,7 @@ public class Server implements Runnable {
                     findAndInsertLocation(locationObject);
                 } catch (SQLException e) {
                     logger.log(Level.SEVERE, "Could not insert new location into database.");
-                    out.writeObject(NULL_LOCATION);
+                    out.writeObject(OUT_OF_BOUNDS_LOCATION);
                     socket.close();
                     continue; // don't want to stop the server to avoid crashing the client
                 }
@@ -303,7 +303,7 @@ public class Server implements Runnable {
                 ArrayList<LocationObject> locationObjects = new ArrayList<>(1);
                 findNearestLocations(locationObject, locationObjects);
                 if (locationObjects.isEmpty())
-                    out.writeObject(NULL_LOCATION);
+                    out.writeObject(OUT_OF_BOUNDS_LOCATION);
                 else
                     out.writeObject(locationObjects.get(1));
             }
