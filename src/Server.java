@@ -235,6 +235,7 @@ public class Server implements Runnable {
                 // cannot check at the end if an exception is thrown and execution continues
                 if (Thread.interrupted()) {
                     logger.log(Level.WARNING, "Server interrupted in loop.");
+                    listener.close(); // close the socket when stopping
                     connection.close();
                     return;
                 }
@@ -267,12 +268,14 @@ public class Server implements Runnable {
                     }
                     if (count == 0) throw new Exception("Could not perform a handshake with the server.");
                 } catch (ClassNotFoundException e) {
-                    logger.log(Level.WARNING, "Client" + ip + " sent wrong object type.");
+                    logger.log(Level.WARNING, "Client " + ip + " sent wrong object type.");
                     out.writeObject(NULL_LOCATION);
+                    socket.close();
                     continue;
                 } catch (Exception e) {
                     logger.log(Level.WARNING, "Failed handshake with " + ip);
                     out.writeObject(NULL_LOCATION);
+                    socket.close();
                     continue;
                 }
 
@@ -281,6 +284,7 @@ public class Server implements Runnable {
                 } catch (ClassNotFoundException e) {
                     logger.log(Level.WARNING, "Client sent wrong object type.");
                     out.writeObject(NULL_LOCATION);
+                    socket.close();
                     continue; // don't want to stop the server for a single incorrect input
                 }
 
@@ -291,6 +295,7 @@ public class Server implements Runnable {
                 } catch (SQLException e) {
                     logger.log(Level.SEVERE, "Could not insert new location into database.");
                     out.writeObject(NULL_LOCATION);
+                    socket.close();
                     continue; // don't want to stop the server to avoid crashing the client
                 }
 
