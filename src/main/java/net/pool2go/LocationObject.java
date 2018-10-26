@@ -1,18 +1,20 @@
 package net.pool2go;
 
+import java.io.Serializable;
+
 /**
  * A wrapper for a location in the form of Latitude, Longitude and tied to an identifier.
  *
  * The identifier is intended to be in the form of {@code $DATE | IP}, to keep it as unique and simple as possible.
  */
-public class LocationObject {
+public class LocationObject implements Serializable {
 
     private String key;
     private double latitude;
     private double longitude;
 
     /**
-     * Create a main.java.net.pool2go.LocationObject without an attached key.
+     * Create a LocationObject without an attached key.
      *
      * @param lat latitude of the location
      * @param lng longitude of the location
@@ -24,7 +26,7 @@ public class LocationObject {
     }
 
     /**
-     * Create a main.java.net.pool2go.LocationObject with an attached key.
+     * Create a LocationObject with an attached key.
      *
      * @param key the unique identifier
      * @param lat latitude of the location

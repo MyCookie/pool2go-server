@@ -22,8 +22,8 @@ import java.util.logging.*;
  * <p>The server will require the client to perform a handshake first, in the form of:
  * <ul>
  *     <li>Client opens a socket</li>
- *     <li>main.java.net.pool2go.Server sends an empty main.java.net.pool2go.LocationObject with the client's unique key</li>
- *     <li>Client sends a main.java.net.pool2go.LocationObject with it's unique key provided by the server</li>
+ *     <li>Server sends an empty net.pool2go.LocationObject with the client's unique key</li>
+ *     <li>Client sends a net.pool2go.LocationObject with it's unique key provided by the server</li>
  *     <ul>
  *         <li>Notice the server does not check for the other fields of the Location Object send, only the key</li>
  *         <li>If the client sends the wrong key, it gets an additional 5 attempts to send the right key</li>
@@ -34,7 +34,7 @@ import java.util.logging.*;
  *
  * <p>The client is then required to do the following:
  * <ul>
- *     <li>Send it's updated location in a main.java.net.pool2go.LocationObject with it's provided key</li>
+ *     <li>Send it's updated location in a net.pool2go.LocationObject with it's provided key</li>
  *     <li>The server does its job: updating the client's location in the database, and searching for any other locations
  *     with a different key within a 200 meter radius.</li>
  *     <ul>
@@ -70,9 +70,9 @@ public class Server implements Runnable {
      * <p>A full path and file name is required for the database location. For example: C:\ServerFiles\Databases\Database.sqlite,
      * or: /server_raid/databases/database.sqlite.</p>
      *
-     * <p>An IOException is thrown if there was any problems/Exceptions thrown when building the main.java.net.pool2go.Server. See logs for details.</p>
+     * <p>An IOException is thrown if there was any problems/Exceptions thrown when building the Server. See logs for details.</p>
      *
-     * @param port port for the main.java.net.pool2go.Server to run on
+     * @param port port for the Server to run on
      * @param databaseUrl full path and filename for the database
      * @throws IOException generic exception when some exception occurred when building the server parts
      */
@@ -80,7 +80,7 @@ public class Server implements Runnable {
         try {
             loggerFactory();
         } catch (IOException e) {
-            throw new IOException("Could not build main.java.net.pool2go.Server Logger.");
+            throw new IOException("Could not build Server Logger.");
         }
 
         dbUrl = "jdbc:sqlite:" + databaseUrl;
@@ -92,7 +92,7 @@ public class Server implements Runnable {
         }
 
         listener = new ServerSocket(port);
-        logger.log(Level.CONFIG, "main.java.net.pool2go.Server listener created on port: " + port);
+        logger.log(Level.CONFIG, "Server listener created on port: " + port);
     }
 
     /**
@@ -140,7 +140,7 @@ public class Server implements Runnable {
         fileHandler.setLevel(Level.ALL);
         logger.setLevel(Level.ALL);
 
-        logger.log(Level.CONFIG, "main.java.net.pool2go.Server logger configured");
+        logger.log(Level.CONFIG, "Server logger configured");
     }
 
     /**
@@ -236,7 +236,7 @@ public class Server implements Runnable {
             while (true) {
                 // cannot check at the end if an exception is thrown and execution continues
                 if (Thread.interrupted()) {
-                    logger.log(Level.WARNING, "main.java.net.pool2go.Server interrupted in loop.");
+                    logger.log(Level.WARNING, "Server interrupted in loop.");
                     listener.close(); // close the socket when stopping
                     connection.close();
                     return;
@@ -247,24 +247,29 @@ public class Server implements Runnable {
                 // grab client info
                 InetAddress clientAddr = socket.getInetAddress();
                 StringBuilder stringBuilder = new StringBuilder();
-                for (byte b : clientAddr.getAddress())
-                    stringBuilder.append(b);
+                for (byte b : clientAddr.getAddress()) {
+                    if (stringBuilder.length() > 0) stringBuilder.append(".");
+                    stringBuilder.append(Byte.toString(b));
+                }
                 String ip = stringBuilder.toString();
                 logger.log(Level.INFO, "New connection opened with client at: " + ip);
 
                 String key = Calendar.getInstance().getTime().toString() + " | " + ip;
 
-                ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
                 ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+                ObjectInputStream in = null;
                 LocationObject locationObject;
 
                 // perform a handshake with the server
                 try {
                     out.writeObject(new LocationObject(key, OUT_OF_BOUNDS_LATITUDE, OUT_OF_BOUNDS_LONGITUDE));
+                    out.flush();
+                    in = new ObjectInputStream(socket.getInputStream());
                     locationObject = (LocationObject) in.readObject();
-                    int count = 6; // client gets 5 chances
+                    int count = 1000; // client gets 1000 chances
                     while (!locationObject.getKey().equals(key) && count > 0) {
                         out.writeObject(new LocationObject(key, OUT_OF_BOUNDS_LATITUDE, OUT_OF_BOUNDS_LONGITUDE));
+                        out.flush();
                         locationObject = (LocationObject) in.readObject();
                         --count;
                     }
@@ -272,11 +277,13 @@ public class Server implements Runnable {
                 } catch (ClassNotFoundException e) {
                     logger.log(Level.WARNING, "Client " + ip + " sent wrong object type.");
                     out.writeObject(OUT_OF_BOUNDS_LOCATION);
+                    out.flush();
                     socket.close();
                     continue;
                 } catch (Exception e) {
                     logger.log(Level.WARNING, "Failed handshake with " + ip);
                     out.writeObject(OUT_OF_BOUNDS_LOCATION);
+                    out.flush();
                     socket.close();
                     continue;
                 }
@@ -286,6 +293,7 @@ public class Server implements Runnable {
                 } catch (ClassNotFoundException e) {
                     logger.log(Level.WARNING, "Client sent wrong object type.");
                     out.writeObject(OUT_OF_BOUNDS_LOCATION);
+                    out.flush();
                     socket.close();
                     continue; // don't want to stop the server for a single incorrect input
                 }
@@ -297,6 +305,7 @@ public class Server implements Runnable {
                 } catch (SQLException e) {
                     logger.log(Level.SEVERE, "Could not insert new location into database.");
                     out.writeObject(OUT_OF_BOUNDS_LOCATION);
+                    out.flush();
                     socket.close();
                     continue; // don't want to stop the server to avoid crashing the client
                 }
@@ -308,6 +317,10 @@ public class Server implements Runnable {
                     out.writeObject(OUT_OF_BOUNDS_LOCATION);
                 else
                     out.writeObject(locationObjects.get(1));
+
+                out.flush();
+                socket.close();
+                logger.log(Level.INFO, "Closing connection to client: " + ip);
             }
         } catch (IOException e) {
             e.getMessage();

@@ -77,7 +77,7 @@ public class Manager {
             System.out.println("Running with the following arguments:" + "\n" +
                                "Full path for SQLite DB: " + path + "\n" +
                                "File name for SQLite DB: " + filename + "\n" +
-                               "main.java.net.pool2go.Server running on port:  " + Integer.toString(port) + "\n");
+                               "Server running on port:  " + Integer.toString(port) + "\n");
         }
 
         // Start the manager
@@ -87,7 +87,7 @@ public class Manager {
             manager = new Manager(path, filename, port);
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("Could not instantiate main.java.net.pool2go.Manager.");
+            System.out.println("Could not instantiate Manager.");
             return;
         }
 
@@ -104,7 +104,7 @@ public class Manager {
     }
 
     /**
-     * Manages the main.java.net.pool2go.Server, required for console input on when to stop the server.
+     * Manages the Server, required for console input on when to stop the server.
      *
      * @param path
      * @param filename
@@ -120,7 +120,7 @@ public class Manager {
             loggerFactory();
         } catch (IOException e) {
             logger.log(Level.SEVERE, "IOException thrown building log.", e);
-            throw new Exception("Could not build main.java.net.pool2go.Manager log.");
+            throw new Exception("Could not build Manager log.");
         }
 
         // create database
@@ -141,15 +141,15 @@ public class Manager {
         try {
             server = new Thread(new Server(port, path + filename));
         } catch (IOException e) {
-            logger.log(Level.SEVERE, "IOException thrown starting main.java.net.pool2go.Server.", e);
+            logger.log(Level.SEVERE, "IOException thrown starting Server.", e);
             throw new Exception("Could not start server.");
         }
 
-        logger.log(Level.INFO, "main.java.net.pool2go.Server says hi! :)");
+        logger.log(Level.INFO, "Server says hi! :)");
     }
 
     /**
-     * Build a logger for main.java.net.pool2go.Manager.
+     * Build a logger for Manager.
      *
      * @throws IOException could not create the log file, may not have read/write permissions in the working directory
      */
@@ -195,7 +195,7 @@ public class Manager {
     public void stopServer() {
         if (server != null) {
             server.interrupt();
-            logger.log(Level.INFO, "main.java.net.pool2go.Server interrupted.");
+            logger.log(Level.INFO, "Server interrupted.");
         }
     }
 
