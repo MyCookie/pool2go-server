@@ -1,3 +1,5 @@
+package net.pool2go;
+
 import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -20,8 +22,8 @@ import java.util.logging.*;
  * <p>The server will require the client to perform a handshake first, in the form of:
  * <ul>
  *     <li>Client opens a socket</li>
- *     <li>Server sends an empty LocationObject with the client's unique key</li>
- *     <li>Client sends a LocationObject with it's unique key provided by the server</li>
+ *     <li>main.java.net.pool2go.Server sends an empty main.java.net.pool2go.LocationObject with the client's unique key</li>
+ *     <li>Client sends a main.java.net.pool2go.LocationObject with it's unique key provided by the server</li>
  *     <ul>
  *         <li>Notice the server does not check for the other fields of the Location Object send, only the key</li>
  *         <li>If the client sends the wrong key, it gets an additional 5 attempts to send the right key</li>
@@ -32,7 +34,7 @@ import java.util.logging.*;
  *
  * <p>The client is then required to do the following:
  * <ul>
- *     <li>Send it's updated location in a LocationObject with it's provided key</li>
+ *     <li>Send it's updated location in a main.java.net.pool2go.LocationObject with it's provided key</li>
  *     <li>The server does its job: updating the client's location in the database, and searching for any other locations
  *     with a different key within a 200 meter radius.</li>
  *     <ul>
@@ -68,9 +70,9 @@ public class Server implements Runnable {
      * <p>A full path and file name is required for the database location. For example: C:\ServerFiles\Databases\Database.sqlite,
      * or: /server_raid/databases/database.sqlite.</p>
      *
-     * <p>An IOException is thrown if there was any problems/Exceptions thrown when building the Server. See logs for details.</p>
+     * <p>An IOException is thrown if there was any problems/Exceptions thrown when building the main.java.net.pool2go.Server. See logs for details.</p>
      *
-     * @param port port for the Server to run on
+     * @param port port for the main.java.net.pool2go.Server to run on
      * @param databaseUrl full path and filename for the database
      * @throws IOException generic exception when some exception occurred when building the server parts
      */
@@ -78,7 +80,7 @@ public class Server implements Runnable {
         try {
             loggerFactory();
         } catch (IOException e) {
-            throw new IOException("Could not build Server Logger.");
+            throw new IOException("Could not build main.java.net.pool2go.Server Logger.");
         }
 
         dbUrl = "jdbc:sqlite:" + databaseUrl;
@@ -90,7 +92,7 @@ public class Server implements Runnable {
         }
 
         listener = new ServerSocket(port);
-        logger.log(Level.CONFIG, "Server listener created on port: " + port);
+        logger.log(Level.CONFIG, "main.java.net.pool2go.Server listener created on port: " + port);
     }
 
     /**
@@ -138,7 +140,7 @@ public class Server implements Runnable {
         fileHandler.setLevel(Level.ALL);
         logger.setLevel(Level.ALL);
 
-        logger.log(Level.CONFIG, "Server logger configured");
+        logger.log(Level.CONFIG, "main.java.net.pool2go.Server logger configured");
     }
 
     /**
@@ -234,7 +236,7 @@ public class Server implements Runnable {
             while (true) {
                 // cannot check at the end if an exception is thrown and execution continues
                 if (Thread.interrupted()) {
-                    logger.log(Level.WARNING, "Server interrupted in loop.");
+                    logger.log(Level.WARNING, "main.java.net.pool2go.Server interrupted in loop.");
                     listener.close(); // close the socket when stopping
                     connection.close();
                     return;

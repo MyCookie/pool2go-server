@@ -1,3 +1,5 @@
+package net.pool2go;
+
 /**
  * A wrapper for a location in the form of Latitude, Longitude and tied to an identifier.
  *
@@ -10,7 +12,7 @@ public class LocationObject {
     private double longitude;
 
     /**
-     * Create a LocationObject without an attached key.
+     * Create a main.java.net.pool2go.LocationObject without an attached key.
      *
      * @param lat latitude of the location
      * @param lng longitude of the location
@@ -22,7 +24,7 @@ public class LocationObject {
     }
 
     /**
-     * Create a LocationObject with an attached key.
+     * Create a main.java.net.pool2go.LocationObject with an attached key.
      *
      * @param key the unique identifier
      * @param lat latitude of the location
