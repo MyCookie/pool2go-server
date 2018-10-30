@@ -116,6 +116,7 @@ public class Server implements Runnable {
                     " longitude real\n" +
                     ");";
             connection.createStatement().execute(sqlCreateTable);
+            connection.close();
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "Could not create Locations table in database.");
             throw new SQLException(e);
@@ -151,6 +152,8 @@ public class Server implements Runnable {
      * @throws SQLException could not write to the database
      */
     private void findAndInsertLocation(LocationObject locationObject) throws SQLException {
+        connection = DriverManager.getConnection(dbUrl);
+
         // find an existing location entry with key
         String sqlFindExistingKey = "SELECT key FROM Locations WHERE key = ?";
         PreparedStatement statement = connection.prepareStatement(sqlFindExistingKey);
@@ -181,6 +184,8 @@ public class Server implements Runnable {
 
             statement.executeUpdate();
         }
+
+        connection.close();
     }
 
     /**
@@ -197,6 +202,8 @@ public class Server implements Runnable {
      */
     private void findNearestLocations(LocationObject locationObject,
                                       ArrayList<LocationObject> locationObjects) throws SQLException {
+        connection = DriverManager.getConnection(dbUrl);
+
         String sqlGetAllRecordsNotOfClientKey = "SELECT key, latitude, longitude FROM Locations WHERE key <> ?";
         PreparedStatement statement = connection.prepareStatement(sqlGetAllRecordsNotOfClientKey);
         statement.setString(1, locationObject.getKey());
@@ -223,6 +230,8 @@ public class Server implements Runnable {
                 }
             }
         }
+
+        connection.close();
     }
 
     /**
@@ -238,7 +247,7 @@ public class Server implements Runnable {
                 if (Thread.interrupted()) {
                     logger.log(Level.WARNING, "Server interrupted in loop.");
                     listener.close(); // close the socket when stopping
-                    connection.close();
+                    if (!connection.isClosed()) connection.close();
                     return;
                 }
 
