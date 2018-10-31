@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Main-Class: net.pool2go.Main
+Name: Pool2Go Server
+Created-By: Ashish Kansara
+Specification-Version: 0.1
+Implementation-Version: 0.1
+

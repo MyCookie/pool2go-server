@@ -1,0 +1,11 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="manager:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/manager_jar</output-path>
+    <root id="archive" name="manager.jar">
+      <element id="module-output" name="util" />
+      <element id="module-output" name="server" />
+      <element id="module-output" name="manager" />
+      <element id="extracted-dir" path="$APPLICATION_HOME_DIR$/lib/sqlite-jdbc-3.21.0.1.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

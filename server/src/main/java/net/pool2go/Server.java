@@ -1,6 +1,5 @@
 package net.pool2go;
 
-import javax.xml.stream.Location;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -8,7 +7,6 @@ import java.net.Socket;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.*;
 
 /**
