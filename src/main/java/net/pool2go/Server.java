@@ -7,6 +7,7 @@ import java.net.Socket;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.*;
 
 /**
@@ -162,7 +163,9 @@ public class Server implements Runnable {
 
         // easier to check if there is a first entry
         // https://stackoverflow.com/questions/867194/java-resultset-how-to-check-if-there-are-any-results
-        if (resultSet.isBeforeFirst()) { // no location entry for key, insert a new record
+        // isBeforeFirst will return true only if there was any records retrieved from a query
+        // https://stackoverflow.com/questions/26324603/jdbc-returns-an-empty-resultset-rs-isbeforefirst-true-although-the-table
+        if (!resultSet.isBeforeFirst()) { // no location entry for key, insert a new record
             String sqlInsertLocation = "INSERT INTO Locations(key, latitude, longitude) VALUES(?,?,?)";
 
             statement = connection.prepareStatement(sqlInsertLocation);
@@ -212,7 +215,7 @@ public class Server implements Runnable {
         double resultLat = 0;
         double resultLng = 0;
 
-        if (resultSet.isBeforeFirst()) {
+        if (!resultSet.isBeforeFirst()) {
             // no other clients exist, empty the list
             locationObjects.clear();
         } else {
@@ -297,6 +300,7 @@ public class Server implements Runnable {
                     continue;
                 }
 
+                // read new location from client
                 try {
                     locationObject = (LocationObject) in.readObject();
                 } catch (ClassNotFoundException e) {
@@ -304,11 +308,12 @@ public class Server implements Runnable {
                     out.writeObject(OUT_OF_BOUNDS_LOCATION);
                     out.flush();
                     socket.close();
-                    continue; // don't want to stop the server for a single incorrect input
+                    continue;
                 }
 
                 if (locationObject.getKey() == null) locationObject.setKey(key);
 
+                // insert new location into the database
                 try {
                     findAndInsertLocation(locationObject);
                 } catch (SQLException e) {
@@ -316,16 +321,17 @@ public class Server implements Runnable {
                     out.writeObject(OUT_OF_BOUNDS_LOCATION);
                     out.flush();
                     socket.close();
-                    continue; // don't want to stop the server to avoid crashing the client
+                    continue;
                 }
 
+                // find the nearest set of locations and send them to the client
                 // TODO: send first location found for now, come back after designing the way to send all
-                ArrayList<LocationObject> locationObjects = new ArrayList<>(1);
+                ArrayList<LocationObject> locationObjects = new ArrayList<>();
                 findNearestLocations(locationObject, locationObjects);
                 if (locationObjects.isEmpty())
                     out.writeObject(OUT_OF_BOUNDS_LOCATION);
                 else
-                    out.writeObject(locationObjects.get(1));
+                    out.writeObject(locationObjects.get(0));
 
                 out.flush();
                 socket.close();
