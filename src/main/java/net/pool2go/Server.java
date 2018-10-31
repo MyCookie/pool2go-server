@@ -1,5 +1,6 @@
 package net.pool2go;
 
+import javax.xml.stream.Location;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -285,14 +286,14 @@ public class Server implements Runnable {
                         locationObject = (LocationObject) in.readObject();
                         --count;
                     }
-                    if (count == 0) throw new Exception("Could not perform a handshake with the server.");
+                    if (count == 0) throw new IOException("Could not perform a handshake with the server.");
                 } catch (ClassNotFoundException e) {
                     logger.log(Level.WARNING, "Client " + ip + " sent wrong object type.");
                     out.writeObject(OUT_OF_BOUNDS_LOCATION);
                     out.flush();
                     socket.close();
                     continue;
-                } catch (Exception e) {
+                } catch (IOException e) {
                     logger.log(Level.WARNING, "Failed handshake with " + ip);
                     out.writeObject(OUT_OF_BOUNDS_LOCATION);
                     out.flush();
