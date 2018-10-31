@@ -16,10 +16,8 @@ class ServerTest {
 
     private static String currentWorkingDirectory;
     private static String databaseFileName = "/pool2go_test.sqlite";
-
-    private final int TEST_PORT = 8082;
-
-    private Thread server;
+    private static final int TEST_PORT = 8082;
+    private static Thread server;
 
     @BeforeAll
     static void buildDepends() {
@@ -29,58 +27,27 @@ class ServerTest {
             System.out.println("Do not have read/write permissions in " + currentWorkingDirectory);
         }
 
-        // clear the database before running a new batch of tests
-        try {
-            Connection connection = DriverManager.getConnection("jdbc:sqlite:" + currentWorkingDirectory + databaseFileName);
-            String sqlDropTable = "DROP TABLE IF EXISTS Locations";
-            connection.createStatement().execute(sqlDropTable);
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
-        }
-    }
-
-    @BeforeEach
-    void setUp() {
+        // start the server
         try {
             server = new Thread(new Server(TEST_PORT, currentWorkingDirectory + databaseFileName));
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
-
         server.start();
     }
 
-    @Test
-    void performHandshakeWithServer() {
-        Socket client = null;
-        ObjectInputStream in = null;
-        ObjectOutputStream out = null;
-        LocationObject locationObject = null;
-        String ip = null;
-
+    @BeforeEach
+    void setUp() {
+        // clear the database before running each test
         try {
-            client = new Socket("localhost", TEST_PORT);
-            in = new ObjectInputStream(client.getInputStream()); // start handshake
-            locationObject = (LocationObject) in.readObject();
-            out = new ObjectOutputStream(client.getOutputStream());
-            out.writeObject(locationObject);
-
-            StringBuilder stringBuilder = new StringBuilder();
-            for (byte b : client.getInetAddress().getAddress()) {
-                if (stringBuilder.length() > 0) stringBuilder.append(".");
-                stringBuilder.append(b);
-            }
-            ip = stringBuilder.toString();
-
-            server.interrupt();
-            client.close();
-        } catch (ClassNotFoundException e) {
-            System.out.println(e.getMessage());
-        } catch (IOException e) {
+            Connection connection = DriverManager.getConnection("jdbc:sqlite:" + currentWorkingDirectory + databaseFileName);
+            String sqlDropTable = "DROP TABLE IF EXISTS Locations";
+            connection.createStatement().execute(sqlDropTable);
+            String sqlCreateTable = "CREATE TABLE IF NOT EXISTS Locations ( key text PRIMARY KEY, latitude real, longitude real );";
+            connection.createStatement().execute(sqlCreateTable);
+        } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
-
-        assertTrue(locationObject.getKey().contains(ip));
     }
 
     /**
@@ -184,9 +151,6 @@ class ServerTest {
         } catch (IOException e) {
             System.out.println(e.getMessage());
         } finally {
-            // don't need the server anymore
-            server.interrupt();
-
             assertTrue(clientTwoKey.contains(clientTwoIp));
             assertEquals(clientOneLocationObject.getLatitude(), locationObject.getLatitude());
             assertEquals(clientOneLocationObject.getLongitude(), locationObject.getLongitude());
