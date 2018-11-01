@@ -1,9 +1,6 @@
 package net.pool2go;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import java.io.*;
 import java.net.Socket;
@@ -45,6 +42,7 @@ class ServerTest {
             connection.createStatement().execute(sqlDropTable);
             String sqlCreateTable = "CREATE TABLE IF NOT EXISTS Locations ( key text PRIMARY KEY, latitude real, longitude real );";
             connection.createStatement().execute(sqlCreateTable);
+            connection.close();
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
@@ -159,5 +157,11 @@ class ServerTest {
 
     @AfterEach
     void tearDown() {
+        // if the server is keeping a list of clients separate from the database, make sure to clear it here
+    }
+
+    @AfterAll
+    static void cleanUp() {
+        server.interrupt();
     }
 }
